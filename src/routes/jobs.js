@@ -41,6 +41,7 @@ router.get('/', (req, res) => {
 })
 
 router.post('/', (req, res) => {
+  console.log("Got request")
   if (isRateLimited(req, res)) {
     return
   }
