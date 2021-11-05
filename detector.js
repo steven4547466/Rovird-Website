@@ -78,7 +78,7 @@ const tests = [
   },
   {
     func: (line, additional) => {
-      return additional.isExternal == 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA Engine|=\s{0,}getfenv|=\s{0,}string.byte|=\s{0,}string.char|(getfenv|string\.byte|string\.char|table\.concat|setmetatable|string\.sub)[^\(]/gi).test(line)
+      return additional.isExternal == 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA Engine|=\s{0,}getfenv[^\(]|=\s{0,}string.byte[^\(]|=\s{0,}string.char[^\(]|(getfenv|string\.byte|string\.char|table\.concat|setmetatable|string\.sub)[^\(]/gi).test(line)
     },
     flagReason: "Script is obfuscated or minified"
   },
