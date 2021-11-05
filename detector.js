@@ -67,7 +67,7 @@ const tests = [
   },
   {
     func: (line) => {
-      let match = line.match(/require\(?[^)]+\)/gi)
+      let match = line.match(/require\([^)]+\)|require,/gi)
       if (!match) return false
       for (let m of match) {
         if ((/\.\.|tonumber/gi).test(m)) return true
