@@ -31,3 +31,5 @@ node_modules/
 *.pem
 
 temp/
+
+*ExampleVideo.mp4
