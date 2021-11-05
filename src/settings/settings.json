@@ -1,0 +1,13 @@
+{
+  "web" : {
+    "port" : 6750
+  },
+  "internal" : {
+    "ssl" : {
+      "privateKeyLocation" : "",
+      "certificateLocation" : "",
+      "chainLocation" : ""
+    }
+  },
+  "developerMode": true
+}
