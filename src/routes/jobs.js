@@ -90,7 +90,7 @@ function isRateLimited(req, res) {
     for (let [k, v] of Object.entries(limit)) {
       res.header(k, v)
     }
-  
+
     return false
   }
 
@@ -112,10 +112,13 @@ function isRateLimited(req, res) {
   return false
 }
 
-async function getResults(body, jobId) {
+async function getResults(body, jobId, res) {
   let results = []
   completedJobs[jobId] = null
   for (let script of body) {
+    if (!script.Source || !script.Children || !script.UUID) {
+      continue
+    }
     results.push(await detector.scoreScript(script))
   }
   setTimeout(() => {
