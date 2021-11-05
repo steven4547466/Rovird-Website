@@ -4,9 +4,9 @@
   },
   "internal" : {
     "ssl" : {
-      "privateKeyLocation" : "",
-      "certificateLocation" : "",
-      "chainLocation" : ""
+      "privateKeyLocation" : "/etc/letsencrypt/live/rovird.xyz/privkey.pem",
+      "certificateLocation" : "/etc/letsencrypt/live/rovird.xyz/cert.pem",
+      "chainLocation" : "/etc/letsencrypt/live/rovird.xyz/fullchain.pem"
     }
   },
   "developerMode": true
