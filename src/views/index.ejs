@@ -4,14 +4,29 @@
 <head>
   <title>Rovird</title>
   <%- include partials/head.ejs %>
-  <meta name="description" content="Roblox Virus Detector">
-  <meta property="og:description" content="Roblox Virus Detector.">
-  <meta name="twitter:description" content="Roblox Virus Detector.">
-  <meta itemprop="description" content="Roblox Virus Detector.">
+    <meta name="description" content="Roblox Virus Detector">
+    <meta property="og:description" content="Roblox Virus Detector.">
+    <meta name="twitter:description" content="Roblox Virus Detector.">
+    <meta itemprop="description" content="Roblox Virus Detector.">
+    <script>
+      function onLoad() {
+        particlesJS.load('particles-js', '/assets/particles.json', function () {
+          console.log('callback - particles.js config loaded')
+        })
+      }
+    </script>
 </head>
 
-<body>
-
+<body onload="onLoad()">
+  <div id="particles-js"></div>
+  <section style="padding:0; margin:0;" class="is-overlay" id="title">
+    <div class="columns center-screen is-mobile title">
+      <div class="column soon-col">
+        <img class="soon" src="/assets/Soon.png">
+      </div>
+    </div>
+  </section>
+  <script src="/js/particles.min.js"></script>
 </body>
 
 </html>

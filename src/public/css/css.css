@@ -1,0 +1,17 @@
+html,body { height:100%; }
+
+body {
+  background-color: #222;
+}
+
+.soon-col {
+  display: inline-block;
+  margin-right: 0;
+}
+
+.soon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
