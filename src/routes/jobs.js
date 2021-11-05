@@ -14,7 +14,6 @@ router.get('/', (req, res) => {
   }
 
   if (!req.query.jobId) {
-    console.log("No job id")
     res.status(400)
     res.send("No JobId in query")
     res.end()
@@ -23,7 +22,6 @@ router.get('/', (req, res) => {
 
   if (completedJobs[req.query.jobId] === null) {
     res.status(400)
-    console.log("Job not complete")
     res.send("Job not yet complete. Try again soon")
     res.end()
     return
@@ -31,7 +29,6 @@ router.get('/', (req, res) => {
 
   if (!completedJobs[req.query.jobId]) {
     res.status(400)
-    console.log("Incorrect job id")
     res.send("Incorrect JobId")
     res.end()
     return
@@ -50,7 +47,6 @@ router.post('/', (req, res) => {
 
   if (!req.body || !Array.isArray(req.body) || req.body.length == 0) {
     res.status(400)
-    console.log("No body provided")
     res.send("No body provided")
     res.end()
     return
@@ -67,7 +63,6 @@ function isRateLimited(req, res) {
   const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress).split(",")[0]
   if (!ip) {
     res.status(400)
-    console.log("Can't resolve ip")
     res.send("Unable to resolve ip")
     res.end()
     return true
