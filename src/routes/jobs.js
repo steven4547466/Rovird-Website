@@ -112,14 +112,15 @@ function isRateLimited(req, res) {
   return false
 }
 
-async function getResults(body, jobId, res) {
+async function getResults(body, jobId) {
   let results = []
   completedJobs[jobId] = null
   for (let script of body) {
     if (!script.Source || !script.Children || !script.UUID) {
       continue
     }
-    results.push(await detector.scoreScript(script))
+    results.push(await detector.scoreScript(script, {}, [], 0, null, jobId))
+    detector.removeCyclic(jobId)
   }
   setTimeout(() => {
     if (completedJobs[jobId]) delete completedJobs[jobId]

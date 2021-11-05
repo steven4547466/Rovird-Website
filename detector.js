@@ -12,7 +12,9 @@ const crypto = require("crypto")
 
 // score(5698193573)
 
-let tests = [
+const preventCyclic = {}
+
+const tests = [
   {
     func: (line) => {
       return (/loadstring|gnirtsdaol/gi).test(line)
@@ -40,6 +42,9 @@ let tests = [
         let id = Number(match[1])
         await new Promise(resolve => {
           AssetCache.loadModel(id, async (model) => {
+            if (!preventCyclic[additional.jobId]) preventCyclic[additional.jobId] = []
+            if (preventCyclic[additional.jobId].includes(id)) return resolve()
+            preventCyclic[additional.jobId].push(id)
             if (model == null) {
               additional.flags.push([])
               let index = additional.flags.length - 1
@@ -50,7 +55,7 @@ let tests = [
               return
             }
             for (let i = 0; i < model.length; i++) {
-              await checkChildrenFromScript(model[i], additional.overview, additional.flags, additional.isExternal + 1, id)
+              await checkChildrenFromScript(model[i], additional.overview, additional.flags, additional.isExternal + 1, id, additional.jobId)
               resolve()
             }
           })
@@ -113,7 +118,7 @@ function score(assetId) {
   })
 }
 
-async function scoreScript(script, overview = {}, flags = [], isExternal = 0, assetId = 0) {
+async function scoreScript(script, overview = {}, flags = [], isExternal = 0, assetId = 0, jobId = "") {
   if (!script.UUID && isExternal == 0) return
   let source = script.Source.replace(/\t/g, "    ")
   let sourceByLine = source.split("\n")
@@ -156,7 +161,7 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
       flags[index].push(new Flag(i, "Line is excessively long (500+ characters)"))
     }
     for (let test of tests) {
-      if ((await test.func(line, { flags, isExternal, overview }))) {
+      if ((await test.func(line, { flags, isExternal, overview, jobId }))) {
         flags[index].push(new Flag(i, test.flagReason))
       }
     }
@@ -172,23 +177,23 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
   return overview
 }
 
-async function checkChildren(model, information, assetId) {
+async function checkChildren(model, information, assetId, jobId = "") {
   for (let child of model.Children) {
     if (child.ClassName.includes("Script") || (child.ClassName.trim() == "" && child.Source && child.Source.length > 0)) {
-      information.push((await scoreScript(child, {}, [], 0, assetId)))
+      information.push((await scoreScript(child, {}, [], 0, assetId, jobId)))
     } else {
-      await checkChildren(child)
+      await checkChildren(child, information, assetId, jobId)
     }
   }
 }
 
-async function checkChildrenFromScript(model, overview, flags, isExternal, assetId) {
-  await scoreScript(model, overview, flags, isExternal, assetId)
+async function checkChildrenFromScript(model, overview, flags, isExternal, assetId, jobId) {
+  await scoreScript(model, overview, flags, isExternal, assetId, jobId)
   for (let child of model.Children) {
     if (child.ClassName.includes("Script")) {
-      await scoreScript(child, overview, flags, isExternal, assetId)
+      await scoreScript(child, overview, flags, isExternal, assetId, jobId)
     } else {
-      await checkChildrenFromScript(child, overview, flags, isExternal, assetId)
+      await checkChildrenFromScript(child, overview, flags, isExternal, assetId, jobId)
     }
   }
 }
@@ -220,6 +225,10 @@ function countSpacesInARow(str) {
   return maxInRow >= 8 ? maxInRow : 0
 }
 
+function removeCyclic(jobId) {
+  if (preventCyclic[jobId]) delete preventCyclic[jobId]
+}
+
 class Flag {
   constructor(line, reason) {
     this.line = line !== null ? line + 1 : null
@@ -227,4 +236,4 @@ class Flag {
   }
 }
 
-module.exports = { score, scoreScript }
+module.exports = { score, scoreScript, removeCyclic }
