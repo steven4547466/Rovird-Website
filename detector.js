@@ -222,7 +222,7 @@ function countSpacesInARow(str) {
 
 class Flag {
   constructor(line, reason) {
-    this.line = line ? line + 1 : null
+    this.line = line !== null ? line + 1 : null
     this.reason = reason
   }
 }
