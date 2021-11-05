@@ -41,7 +41,6 @@ router.get('/', (req, res) => {
 })
 
 router.post('/', (req, res) => {
-  console.log("Got request")
   if (isRateLimited(req, res)) {
     return
   }
@@ -62,8 +61,6 @@ router.post('/', (req, res) => {
 
 function isRateLimited(req, res) {
   const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress).split(",")[0]
-  console.log("Getting ip:")
-  console.log(ip)
   if (!ip) {
     res.status(400)
     res.send("Unable to resolve ip")
@@ -72,7 +69,6 @@ function isRateLimited(req, res) {
   }
 
   let limit = rateLimit[ip]
-  console.log(limit)
   if (!limit) {
     rateLimit[ip] = {
       "x-ratelimit-limit": 60,
