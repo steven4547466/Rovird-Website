@@ -5,13 +5,6 @@ const logger = require('morgan')
 const bodyParser = require('body-parser')
 const path = require('path')
 
-const rateLimit = require("express-rate-limit")
-
-const limiter = rateLimit({
-  windowMs: 1000 * 60,
-  max: 60
-})
-
 // express and view engine setup
 const app = express()
 app.set('views', path.join(__dirname, 'views'))
@@ -27,7 +20,7 @@ app.use(bodyParser.urlencoded({
 
 // routers
 app.use('/', require('./routes/main.js'))
-app.use('/jobs', limiter, require('./routes/jobs.js'))
+app.use('/jobs', require('./routes/jobs.js'))
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => next(createError(404)))
