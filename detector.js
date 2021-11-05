@@ -148,7 +148,7 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
     if(line.length == 0) continue
     let curLineIndentation = (line.match(/^ {0,}/g) || [""])[0].length;
     let isHidden = false
-    if ((curLineIndentation - lastLineIndentation) > 30 || countSpacesInARow(line) > lastLineIndentation + 12) {
+    if ((curLineIndentation - lastLineIndentation) > 30 || countSpacesInARow(line) > lastLineIndentation + 32) {
       flags[index].push(new Flag(i, "Possible hidden code"))
       isHidden = true
     }
