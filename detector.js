@@ -73,13 +73,13 @@ let tests = [
   },
   {
     func: (line, additional) => {
-      return (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA Engine|=\s{0,}getfenv|=\s{0,}string.byte|=\s{0,}string.char|(getfenv|string\.byte|string\.char|table\.concat|setmetatable|string\.sub)[^\(]/gi).test(line) && additional.isExternal === null
+      return additional.isExternal == 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA Engine|=\s{0,}getfenv|=\s{0,}string.byte|=\s{0,}string.char|(getfenv|string\.byte|string\.char|table\.concat|setmetatable|string\.sub)[^\(]/gi).test(line)
     },
     flagReason: "Script is obfuscated or minified"
   },
   {
     func: (line, additional) => {
-      return (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA Engine|=\s{0,}getfenv|=\s{0,}string.byte|=\s{0,}string.char|(getfenv|string\.byte|string\.char|table\.concat|setmetatable|string\.sub)[^\(]/gi).test(line) && additional.isExternal > 0
+      return additional.isExternal > 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA Engine|=\s{0,}getfenv|=\s{0,}string.byte|=\s{0,}string.char|(getfenv|string\.byte|string\.char|table\.concat|setmetatable|string\.sub)[^\(]/gi).test(line)
     },
     flagReason: "Script is external and obfuscated or minified"
   },
