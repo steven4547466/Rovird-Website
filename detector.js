@@ -45,12 +45,12 @@ let tests = [
               let index = additional.flags.length - 1
               additional.flags[index].push(new Flag(null, `Script is externally required. Layer #${additional.isExternal + 1}`))
               additional.flags[index].push(new Flag(null, `Unable to download asset after 5 retries`))
-              let data = { flags: additional.flags[index], isExternal: additional.isExternal + 1, name: "Unknown" }
+              let data = { flags: additional.flags[index], isExternal: additional.isExternal + 1, name: "Unknown", assetId: id }
               overview[crypto.randomUUID()] = data
               return
             }
             for (let i = 0; i < model.length; i++) {
-              await checkChildrenFromScript(model[i], additional.overview, additional.flags, additional.isExternal + 1)
+              await checkChildrenFromScript(model[i], additional.overview, additional.flags, additional.isExternal + 1, id)
               resolve()
             }
           })
@@ -65,7 +65,7 @@ let tests = [
       let match = line.match(/require\(?[^)]+\)/gi)
       if (!match) return false
       for (let m of match) {
-        if ((/\.\.|,|tonumber/gi).test(m)) return true
+        if ((/\.\.|tonumber/gi).test(m)) return true
       }
       return false
     },
@@ -90,6 +90,12 @@ let tests = [
         .some(f => lower.includes(f))
     },
     flagReason: "Script contains known virus text"
+  },
+  {
+    func: (line) => {
+      return line.toLowerCase().includes("rovird_donotcheck")
+    },
+    flagReason: "Script contains Rovird_DoNotCheck (possibly adding unwanted scripts to DoNotCheck)"
   }
 ]
 
@@ -99,15 +105,15 @@ function score(assetId) {
     let information = []
     for (let i = 0; i < model.length; i++) {
       if (model[i].ClassName.includes("Script") || (model[i].ClassName.trim() == "" && model[i].Source && model[i].Source.length > 0)) {
-        information.push((await scoreScript(model[i])))
+        information.push((await scoreScript(model[i], {}, [], 0, assetId)))
       } else {
-        await checkChildren(model[i], information)
+        await checkChildren(model[i], information, assetId)
       }
     }
   })
 }
 
-async function scoreScript(script, overview = {}, flags = [], isExternal = 0) {
+async function scoreScript(script, overview = {}, flags = [], isExternal = 0, assetId = 0) {
   if (!script.UUID && isExternal == 0) return
   let source = script.Source.replace(/\t/g, "    ")
   let sourceByLine = source.split("\n")
@@ -122,7 +128,6 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0) {
   for (let i = 0; i < sourceByLine.length; i++) {
     if (sourceByLine[i].trim().length == 0) continue
     let line = resolveLine(sourceByLine[i]).trim()
-    if (line.startsWith("--")) continue
     if (inComment) {
       if (line.includes("]]")) {
         inComment = false
@@ -135,9 +140,12 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0) {
       line = line.slice(0, line.indexOf("--[[")).trim()
       inComment = true
     }
+    if (line.trim().startsWith("--")) continue
     if (line.includes("--")) {
       line = line.slice(0, line.indexOf("--")).trim()
     }
+    line = line.trim()
+    if(line.length == 0) continue
     let curLineIndentation = (line.match(/^ {0,}/g) || [""])[0].length;
     let isHidden = false
     if ((curLineIndentation - lastLineIndentation) > 30 || countSpacesInARow(line) > lastLineIndentation + 12) {
@@ -155,29 +163,32 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0) {
     if (!isHidden) lastLineIndentation = curLineIndentation
   }
   let data = { flags: flags[index], isExternal }
-  if (isExternal > 0) data.name = script.Name
+  if (isExternal > 0) {
+    data.name = script.Name
+    data.assetId = assetId
+  }
   overview[script.UUID || crypto.randomUUID()] = data
   // if (index == 0) console.log(flags)
   return overview
 }
 
-async function checkChildren(model, information) {
+async function checkChildren(model, information, assetId) {
   for (let child of model.Children) {
     if (child.ClassName.includes("Script") || (child.ClassName.trim() == "" && child.Source && child.Source.length > 0)) {
-      information.push((await scoreScript(child)))
+      information.push((await scoreScript(child, {}, [], 0, assetId)))
     } else {
       await checkChildren(child)
     }
   }
 }
 
-async function checkChildrenFromScript(model, overview, flags, isExternal) {
-  await scoreScript(model, overview, flags, isExternal)
+async function checkChildrenFromScript(model, overview, flags, isExternal, assetId) {
+  await scoreScript(model, overview, flags, isExternal, assetId)
   for (let child of model.Children) {
     if (child.ClassName.includes("Script")) {
-      await scoreScript(child, overview, flags, isExternal)
+      await scoreScript(child, overview, flags, isExternal, assetId)
     } else {
-      await checkChildrenFromScript(child, overview, flags, isExternal)
+      await checkChildrenFromScript(child, overview, flags, isExternal, assetId)
     }
   }
 }
@@ -211,7 +222,7 @@ function countSpacesInARow(str) {
 
 class Flag {
   constructor(line, reason) {
-    this.line = line
+    this.line = line ? line + 1 : null
     this.reason = reason
   }
 }
