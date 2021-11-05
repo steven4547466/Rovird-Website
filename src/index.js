@@ -8,7 +8,7 @@ const path = require('path')
 const rateLimit = require("express-rate-limit")
 
 const limiter = rateLimit({
-  windowMs: 1000*60,
+  windowMs: 1000 * 60,
   max: 60
 })
 
@@ -19,7 +19,7 @@ app.set('view engine', 'ejs')
 
 // middleware setup
 app.use(logger('common'))
-app.use(bodyParser.json())
+app.use(bodyParser.json({ limit: "2mb" }))
 app.use(express.static(path.join(__dirname, 'public')))
 app.use(bodyParser.urlencoded({
   extended: true
