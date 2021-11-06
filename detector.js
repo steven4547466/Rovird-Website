@@ -184,7 +184,7 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
   // for (let k of Object.keys(aiAnalysis)) {
   //   aiAnalysis[k] = aiAnalysis[k]/sourceByLine.length
   // }
-  let data = { flags: flags[index], isExternal, aiAnalysis }
+  let data = { flags: flags[index], isExternal, /*aiAnalysis*/ }
   if (isExternal > 0) {
     data.name = script.Name
     data.assetId = assetId
