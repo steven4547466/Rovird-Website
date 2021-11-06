@@ -4,7 +4,8 @@
   "description": "Roblox virus detection",
   "main": "./src/index.js",
   "scripts": {
-    "start": "node ./src/bin/www"
+    "start": "node ./src/bin/www",
+    "train": "node ./brain/train.js"
   },
   "author": "Steven4547466",
   "license": "MIT",
@@ -19,6 +20,7 @@
     "minimist": "^1.2.5",
     "moment": "^2.24.0",
     "morgan": "^1.9.1",
+    "natural": "^5.1.10",
     "node-fetch": "^2.6.6",
     "path": "^0.12.7"
   },

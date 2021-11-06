@@ -1,11 +1,17 @@
 const AssetCache = require("./AssetCache")
 const crypto = require("crypto")
+const brain = require("./brain/brain")
 
+// Not viruses
 // score(7567983240)
 // score(7828144123)
+// score(7908534022)
+
+// Viruses
 // score(5108960396)
 // score(3664252382)
 // score(381046418)
+
 // require("fs").readFile("Matchmaker.rbxm", (err, file) => {
 //   scoreScript(require("./RBXParaser").parseModel(file)[0], {}, [])
 // })
@@ -110,6 +116,7 @@ function score(assetId) {
     let information = []
     for (let i = 0; i < model.length; i++) {
       if (model[i].ClassName.includes("Script") || (model[i].ClassName.trim() == "" && model[i].Source && model[i].Source.length > 0)) {
+        model[i].UUID = crypto.randomUUID()
         information.push((await scoreScript(model[i], {}, [], 0, assetId)))
       } else {
         await checkChildren(model[i], information, assetId)
@@ -120,6 +127,7 @@ function score(assetId) {
 
 async function scoreScript(script, overview = {}, flags = [], isExternal = 0, assetId = 0, jobId = "") {
   if (!script.UUID && isExternal == 0) return
+  if (!script.Source) return
   let source = script.Source.replace(/\t/g, "    ")
   let sourceByLine = source.split("\n")
   let lastLineIndentation = 0
@@ -130,6 +138,7 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
   for (let child of script.Children) {
     await scoreScript(child, overview, flags)
   }
+  // let aiAnalysis = {}
   for (let i = 0; i < sourceByLine.length; i++) {
     if (sourceByLine[i].trim().length == 0) continue
     let line = resolveLine(sourceByLine[i]).trim()
@@ -151,6 +160,11 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
     }
     line = line.trim()
     if(line.length == 0) continue
+    // let analysis = await brain.run(line)
+    // for (let entry of analysis) {
+    //   if (aiAnalysis[entry.label] == null) aiAnalysis[entry.label] = 0
+    //   aiAnalysis[entry.label] += entry.value 
+    // }
     let curLineIndentation = (line.match(/^ {0,}/g) || [""])[0].length;
     let isHidden = false
     if ((curLineIndentation - lastLineIndentation) > 30 || countSpacesInARow(line) > lastLineIndentation + 32) {
@@ -167,7 +181,10 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
     }
     if (!isHidden) lastLineIndentation = curLineIndentation
   }
-  let data = { flags: flags[index], isExternal }
+  // for (let k of Object.keys(aiAnalysis)) {
+  //   aiAnalysis[k] = aiAnalysis[k]/sourceByLine.length
+  // }
+  let data = { flags: flags[index], isExternal, aiAnalysis }
   if (isExternal > 0) {
     data.name = script.Name
     data.assetId = assetId
@@ -180,6 +197,7 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
 async function checkChildren(model, information, assetId, jobId = "") {
   for (let child of model.Children) {
     if (child.ClassName.includes("Script") || (child.ClassName.trim() == "" && child.Source && child.Source.length > 0)) {
+      child.UUID = crypto.randomUUID()
       information.push((await scoreScript(child, {}, [], 0, assetId, jobId)))
     } else {
       await checkChildren(child, information, assetId, jobId)

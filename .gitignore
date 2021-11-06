@@ -33,3 +33,5 @@ node_modules/
 temp/
 
 *ExampleVideo.mp4
+
+brain/trainingData.json
