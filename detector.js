@@ -73,10 +73,11 @@ const tests = [
   },
   {
     func: (line) => {
-      let match = line.match(/require\s{0,}\([^)]+\)|require\s{0,},/gi)
+      let match = line.match(/require\s{0,}\([^)]+\)/gi)
       if (!match) return false
       for (let m of match) {
-        if ((/\.\.|tonumber|\+|\*|\\|\-|\(/gi).test(m)) return true
+        if (m.indexOf("(") != m.lastIndexOf("(")) return true
+        if ((/\.\.|tonumber|\d+\s{0,}\+\s{0,}\d+|\d+\s{0,}\*\s{0,}\d+|\d+\s{0,}\/\s{0,}\d+|\d+\s{0,}\-\s{0,}\d+|,/gi).test(m)) return true
       }
       return false
     },
