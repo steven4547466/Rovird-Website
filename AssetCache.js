@@ -117,11 +117,11 @@ function createMethod(constructor) {
       if (cache[id]) return cb(cache[id])
       url = AssetCache.toAssetUrl(url)
     }
-
-    const resolvedUrl = resolveAssetUrl(url)
-    const file = await download(resolvedUrl, __dirname + "/temp/" + id)
-
     try {
+      const resolvedUrl = resolveAssetUrl(url)
+      const file = await download(resolvedUrl, __dirname + "/temp/" + id)
+
+
       let parsed = constructor(file)
       cache[id] = parsed
       let timeout = setTimeout(() => {
@@ -136,11 +136,15 @@ function createMethod(constructor) {
         clearTimeout(c.timeout)
       }
       cb(cache[id])
-      fs.unlinkSync(__dirname + "/temp/" + id)
+      try {
+        fs.unlinkSync(__dirname + "/temp/" + id)
+      } catch (e) { }
     } catch (err) {
       if (err = "Not a valid RBXM file") {
         console.log("Invalid file")
-        fs.unlinkSync(__dirname + "/temp/" + id)
+        try {
+          fs.unlinkSync(__dirname + "/temp/" + id)
+        } catch (e) { }
         if (retries > 5) {
           cb(null)
           return
@@ -155,19 +159,21 @@ function createMethod(constructor) {
 
 function download(url, filePath) {
   return new Promise(async (resolve, reject) => {
-    let file = fs.createWriteStream(filePath)
-    let res = await fetch(url)
-    res.body.pipe(file)
-    file.on("finish", () => {
-      fs.readFile(filePath, (err, file) => {
-        if (err) return reject(err)
-        resolve(file)
+    try {
+      let file = fs.createWriteStream(filePath)
+      let res = await fetch(url)
+      res.body.pipe(file)
+      file.on("finish", () => {
+        fs.readFile(filePath, (err, file) => {
+          if (err) return reject(err)
+          resolve(file)
+        })
       })
-    })
 
-    file.on("error", err => {
-      fs.unlink(filePath, () => reject(err))
-    })
+      file.on("error", err => {
+        fs.unlink(filePath, () => reject(err))
+      })
+    } catch (e) { reject(e) }
   })
 }
 

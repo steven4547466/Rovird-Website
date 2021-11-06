@@ -1,6 +1,6 @@
 const AssetCache = require("./AssetCache")
 const crypto = require("crypto")
-const brain = require("./brain/brain")
+// const brain = require("./brain/brain")
 
 // Not viruses
 // score(7567983240)
@@ -35,7 +35,7 @@ const tests = [
   },
   {
     func: (line) => {
-      return (/getfenv\(\)\[(\"|')require(\"|')\]/gi).test(line)
+      return (/getfenv\s{0,}\(\s{0,}\)\s{0,}\[\s{0,}(\"|')\s{0,}require\s{0,}(\"|')\s{0,}\]/gi).test(line)
     },
     flagReason: "Common virus require obfuscation"
   },
@@ -73,10 +73,10 @@ const tests = [
   },
   {
     func: (line) => {
-      let match = line.match(/require\([^)]+\)|require,/gi)
+      let match = line.match(/require\s{0,}\([^)]+\)|require\s{0,},/gi)
       if (!match) return false
       for (let m of match) {
-        if ((/\.\.|tonumber/gi).test(m)) return true
+        if ((/\.\.|tonumber|\+|\*|\\|\-|\(/gi).test(m)) return true
       }
       return false
     },
@@ -84,13 +84,13 @@ const tests = [
   },
   {
     func: (line, additional) => {
-      return additional.isExternal == 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA Engine|=\s{0,}getfenv[^\(]|=\s{0,}string.byte[^\(]|=\s{0,}string.char[^\(]|(getfenv|string\.byte|string\.char|table\.concat|setmetatable|string\.sub)[^\(]/gi).test(line)
+      return additional.isExternal == 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA\s{0,}Engine|=\s{0,}getfenv[^\(]|=\s{0,}string.byte[^\(]|=\s{0,}string.char[^\(]|(getfenv|string\s{0,}\.byte|string\s{0,}\.char|table\s{0,}\.concat|setmetatable|string\s{0,}\.sub)\s{0,}[^\(]/gi).test(line)
     },
     flagReason: "Script is obfuscated or minified"
   },
   {
     func: (line, additional) => {
-      return additional.isExternal > 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA Engine|=\s{0,}getfenv|=\s{0,}string.byte|=\s{0,}string.char|(getfenv|string\.byte|string\.char|table\.concat|setmetatable|string\.sub)[^\(]/gi).test(line)
+      return additional.isExternal > 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA\s{0,}Engine|=\s{0,}getfenv[^\(]|=\s{0,}string.byte[^\(]|=\s{0,}string.char[^\(]|(getfenv|string\s{0,}\.byte|string\s{0,}\.char|table\s{0,}\.concat|setmetatable|string\s{0,}\.sub)\s{0,}[^\(]/gi).test(line)
     },
     flagReason: "Script is external and obfuscated or minified"
   },
@@ -122,7 +122,7 @@ function score(assetId) {
       for (let i = 0; i < model.length; i++) {
         if (model[i].ClassName.includes("Script") || (model[i].ClassName.trim() == "" && model[i].Source && model[i].Source.length > 0)) {
           model[i].UUID = crypto.randomUUID()
-          information.push((await scoreScript(model[i], {}, [], 0, assetId)))
+          information.push((await scoreScript(model[i], {}, [], 1, assetId)))
         } else {
           await checkChildren(model[i], information, assetId)
         }
