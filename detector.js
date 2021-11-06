@@ -58,12 +58,12 @@ const tests = [
               additional.flags[index].push(new Flag(null, `Unable to download asset after 5 retries`))
               let data = { flags: additional.flags[index], isExternal: additional.isExternal + 1, name: "Unknown", assetId: id }
               overview[crypto.randomUUID()] = data
-              return
+              return resolve()
             }
             for (let i = 0; i < model.length; i++) {
               await checkChildrenFromScript(model[i], additional.overview, additional.flags, additional.isExternal + 1, id, additional.jobId)
-              resolve()
             }
+            resolve()
           })
         })
       }
@@ -111,17 +111,24 @@ const tests = [
 ]
 
 function score(assetId) {
-  AssetCache.loadModel(assetId, async model => {
-    if (model == null) return [new Flag(null, "Unable to download asset after 5 retries")]
-    let information = []
-    for (let i = 0; i < model.length; i++) {
-      if (model[i].ClassName.includes("Script") || (model[i].ClassName.trim() == "" && model[i].Source && model[i].Source.length > 0)) {
-        model[i].UUID = crypto.randomUUID()
-        information.push((await scoreScript(model[i], {}, [], 0, assetId)))
-      } else {
-        await checkChildren(model[i], information, assetId)
+  return new Promise((resolve, reject) => {
+    AssetCache.loadModel(assetId, async model => {
+      if (model == null) {
+        let overview = {}
+        overview[crypto.randomUUID()] = { flags: [new Flag(null, "Unable to download asset after 5 retries")], assetId }
+        return resolve(overview)
       }
-    }
+      let information = []
+      for (let i = 0; i < model.length; i++) {
+        if (model[i].ClassName.includes("Script") || (model[i].ClassName.trim() == "" && model[i].Source && model[i].Source.length > 0)) {
+          model[i].UUID = crypto.randomUUID()
+          information.push((await scoreScript(model[i], {}, [], 0, assetId)))
+        } else {
+          await checkChildren(model[i], information, assetId)
+        }
+      }
+      resolve(information)
+    })
   })
 }
 
@@ -159,7 +166,7 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
       line = line.slice(0, line.indexOf("--")).trim()
     }
     line = line.trim()
-    if(line.length == 0) continue
+    if (line.length == 0) continue
     // let analysis = await brain.run(line)
     // for (let entry of analysis) {
     //   if (aiAnalysis[entry.label] == null) aiAnalysis[entry.label] = 0
