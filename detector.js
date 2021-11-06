@@ -1,5 +1,9 @@
 const AssetCache = require("./AssetCache")
 const crypto = require("crypto")
+const parser = require('luaparse')
+
+console.log(JSON.stringify(parseLua("require(a + m, game:GetService(\"a\"))"), null, 4))
+
 // const brain = require("./brain/brain")
 
 // Not viruses
@@ -35,7 +39,7 @@ const tests = [
   },
   {
     func: (line) => {
-      return (/getfenv\s{0,}\(\s{0,}\)\s{0,}\[\s{0,}(\"|')\s{0,}require\s{0,}(\"|')\s{0,}\]/gi).test(line)
+      return (/getfenv\s*\(\s*\)\s*\[\s*(\"|')\s*require\s*(\"|')\s*\]/gi).test(line)
     },
     flagReason: "Common virus require obfuscation"
   },
@@ -73,11 +77,16 @@ const tests = [
   },
   {
     func: (line) => {
-      let match = line.match(/require\s{0,}\([^)]+\)/gi)
+      let match = line.match(/require\s*\([^)]+\)/gi)
       if (!match) return false
+      // let parsed = null
+      // try {
+      //   parsed = parseLua(line)
+      // } catch (e) {
+      //   return "Script failed to parse"
+      // }
       for (let m of match) {
-        if (m.indexOf("(") != m.lastIndexOf("(")) return true
-        if ((/\.\.|tonumber|\d+\s{0,}\+\s{0,}\d+|\d+\s{0,}\*\s{0,}\d+|\d+\s{0,}\/\s{0,}\d+|\d+\s{0,}\-\s{0,}\d+|,/gi).test(m)) return true
+        if ((/\.\.|tonumber|\d+\s*\+\s*\d+|\d+\s*\*\s*\d+|\d+\s*\/\s*\d+|\d+\s*\-\s*\d+|,/gi).test(m)) return true
       }
       return false
     },
@@ -85,13 +94,13 @@ const tests = [
   },
   {
     func: (line, additional) => {
-      return additional.isExternal == 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA\s{0,}Engine|=\s{0,}getfenv[^\(]|=\s{0,}string.byte[^\(]|=\s{0,}string.char[^\(]|(getfenv|string\s{0,}\.byte|string\s{0,}\.char|table\s{0,}\.concat|setmetatable|string\s{0,}\.sub)\s{0,}[^\(]/gi).test(line)
+      return additional.isExternal == 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA\s*Engine|=\s*getfenv[^\(]|=\s*string.byte[^\(]|=\s*string.char[^\(]|(getfenv|string\s*\.byte|string\s*\.char|table\s*\.concat|setmetatable|string\s*\.sub)\s*[^\(]/gi).test(line)
     },
     flagReason: "Script is obfuscated or minified"
   },
   {
     func: (line, additional) => {
-      return additional.isExternal > 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA\s{0,}Engine|=\s{0,}getfenv[^\(]|=\s{0,}string.byte[^\(]|=\s{0,}string.char[^\(]|(getfenv|string\s{0,}\.byte|string\s{0,}\.char|table\s{0,}\.concat|setmetatable|string\s{0,}\.sub)\s{0,}[^\(]/gi).test(line)
+      return additional.isExternal > 0 && (/obfuscate|obfuscator|(il|li|ii|ll|i|l){5,}|SynapseXen|OBA\s*Engine|=\s*getfenv[^\(]|=\s*string.byte[^\(]|=\s*string.char[^\(]|(getfenv|string\s*\.byte|string\s*\.char|table\s*\.concat|setmetatable|string\s*\.sub)\s*[^\(]/gi).test(line)
     },
     flagReason: "Script is external and obfuscated or minified"
   },
@@ -110,6 +119,22 @@ const tests = [
     flagReason: "Script contains Rovird_DoNotCheck (possibly adding unwanted scripts to DoNotCheck)"
   }
 ]
+
+function parseLua(lua) {
+  try {
+    let parsed = parser.parse(lua.replace(/(\w+)\s*(\+|\-|\/|\*)\s*=\s*([^\s]+)/gi, "$1 = $1$2$3"))
+    if (!parsed.body) {
+      console.warn("Parsed no body")
+      console.warn(JSON.stringify(parsed, null, 4))
+      throw new Error("Parsed no body")
+    }
+    return parsed
+  } catch (e) {
+    console.warn("Script failed to parse")
+    console.warn(lua)
+    throw new Error(e)
+  }
+}
 
 function score(assetId) {
   return new Promise((resolve, reject) => {
@@ -173,7 +198,7 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
     //   if (aiAnalysis[entry.label] == null) aiAnalysis[entry.label] = 0
     //   aiAnalysis[entry.label] += entry.value 
     // }
-    let curLineIndentation = (line.match(/^ {0,}/g) || [""])[0].length;
+    let curLineIndentation = (line.match(/^ */g) || [""])[0].length;
     let isHidden = false
     if ((curLineIndentation - lastLineIndentation) > 30 || countSpacesInARow(line) > lastLineIndentation + 32) {
       flags[index].push(new Flag(i, "Possible hidden code"))
@@ -183,8 +208,13 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
       flags[index].push(new Flag(i, "Line is excessively long (500+ characters)"))
     }
     for (let test of tests) {
-      if ((await test.func(line, { flags, isExternal, overview, jobId }))) {
-        flags[index].push(new Flag(i, test.flagReason))
+      let res = null
+      if ((res = (await test.func(line, { flags, isExternal, overview, jobId })))) {
+        if (typeof res !== "string") {
+          flags[index].push(new Flag(i, test.flagReason))
+        } else {
+          flags[index].push(new Flag(i, res))
+        }
       }
     }
     if (!isHidden) lastLineIndentation = curLineIndentation
