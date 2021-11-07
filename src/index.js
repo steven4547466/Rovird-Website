@@ -21,6 +21,7 @@ app.use(bodyParser.urlencoded({
 // routers
 app.use('/', require('./routes/main.js'))
 app.use('/jobs', require('./routes/jobs.js'))
+app.use('/jobs-status', require('./routes/jobsStatus.js'))
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => next(createError(404)))

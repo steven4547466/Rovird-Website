@@ -7,7 +7,7 @@ const shared = require("../../shared")
 
 const completedJobs = shared.completedJobs
 
-const maxRateLimit = 60
+const maxRateLimit = 120
 const rateLimitResetTime = 60
 
 const rateLimit = {}
@@ -18,49 +18,27 @@ router.get('/', (req, res) => {
     return
   }
 
-  if (!req.query.jobId) {
+  if (!req.query.jobIds) {
     res.status(400)
-    res.send("No JobId in query")
+    res.send("No Job Ids in query")
     res.end()
     return
   }
 
-  if (completedJobs[req.query.jobId] === null) {
-    res.status(400)
-    res.send("Job not yet complete. Try again soon")
-    res.end()
-    return
-  }
+  let data = {}
 
-  if (!completedJobs[req.query.jobId]) {
-    res.status(400)
-    res.send("Incorrect JobId")
-    res.end()
-    return
+  for (let id of req.query.jobIds.split(",")) {
+    if (completedJobs[id] === null) {
+      data[id] = 0
+    } else if(!completedJobs[id]) {
+      data[id] = -1 // I would do null, but roblox doesn't parse null to nil
+    } else {
+      data[id] = 1
+    }
   }
 
   res.status(200)
-  res.send(JSON.stringify(completedJobs[req.query.jobId]))
-  delete completedJobs[req.query.jobId]
-  res.end()
-})
-
-router.post('/', (req, res) => {
-  if (isRateLimited(req, res)) {
-    return
-  }
-
-  if (!req.body || !Array.isArray(req.body) || req.body.length == 0) {
-    res.status(400)
-    res.send("No body provided")
-    res.end()
-    return
-  }
-
-  const jobId = crypto.randomUUID()
-  getResults(req.body, jobId)
-  res.status(200)
-  res.send(JSON.stringify({ jobId }))
+  res.send(JSON.stringify(data))
   res.end()
 })
 
@@ -119,22 +97,6 @@ function isRateLimited(req, res) {
   }
 
   return false
-}
-
-async function getResults(body, jobId) {
-  let results = []
-  completedJobs[jobId] = null
-  for (let script of body) {
-    if (!script.Source || !script.Children || !script.UUID) {
-      continue
-    }
-    results.push(await detector.scoreScript(script, {}, [], 0, null, jobId))
-    detector.removeCyclic(jobId)
-  }
-  setTimeout(() => {
-    if (completedJobs[jobId]) delete completedJobs[jobId]
-  }, 600000)
-  completedJobs[jobId] = results
 }
 
 module.exports = router
