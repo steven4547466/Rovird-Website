@@ -6,21 +6,9 @@
 const fetch = require("node-fetch")
 const RBXParser = require("./RBXParaser")
 const fs = require("fs")
-const https = require("https")
+const { bufferToString } = require("./utils")
 const cache = {}
 const cacheLookup = []
-
-function bufferToString(buffer) {
-  if (buffer instanceof ArrayBuffer) { buffer = new Uint8Array(buffer) }
-  const result = []
-
-  for (let i = 0; i < buffer.length; i += 0x8000) {
-    result.push(String.fromCharCode.apply(null, buffer.subarray(i, i + 0x8000)))
-  }
-
-  return result.join("")
-}
-
 
 const AssetCache = {
   loadAnimation: createMethod(buffer => RBXParser.parseAnimation(RBXParser.parseModel(buffer))),
@@ -176,41 +164,5 @@ function download(url, filePath) {
     } catch (e) { reject(e) }
   })
 }
-
-// function download(url, filePath, file) {
-//   let noFile = file == null
-//   return new Promise((resolve, reject) => {
-//     if (noFile) file = fs.createWriteStream(filePath)
-//     const request = https.get(url, { headers: { 'User-Agent': 'Rovird' } }, response => {
-//       if (response.statusCode === 301 || response.statusCode === 302) {
-//         return download(response.headers.location, filePath, file)
-//       }
-//       if (response.statusCode !== 200) {
-//         reject(new Error(`Failed to get "${url}" (${response.statusCode})`))
-//         return
-//       }
-//       response.pipe(file)
-//     })
-
-//     if (noFile) {
-//       file.on("finish", () => {
-//         fs.readFile(filePath, (err, file) => {
-//           if (err) return reject(err)
-//           resolve(file)
-//         })
-//       })
-
-//       file.on("error", err => {
-//         fs.unlink(filePath, () => reject(err))
-//       })
-//     }
-
-//     request.on("error", err => {
-//       fs.unlink(filePath, () => reject(err))
-//     })
-
-//     request.end()
-//   })
-// }
 
 module.exports = AssetCache

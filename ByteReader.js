@@ -3,28 +3,19 @@
 
 "use strict"
 
-function bufferToString (buffer) {
-	if(buffer instanceof ArrayBuffer) { buffer = new Uint8Array(buffer) }
-	const result = []
-
-	for(let i = 0; i < buffer.length; i += 0x8000) {
-		result.push(String.fromCharCode.apply(null, buffer.subarray(i, i + 0x8000)))
-	}
-
-	return result.join("")
-}
+const { bufferToString } = require("./utils")
 
 class ByteReader extends Uint8Array {
 	static ParseFloat(long) {
 		const exp = (long >>> 23) & 255
-		if(exp === 0) { return 0 }
+		if (exp === 0) { return 0 }
 		const float = 2 ** (exp - 127) * (1 + (long & 0x7FFFFF) / 0x7FFFFF)
 		return long > 0x7FFFFFFF ? -float : float
 	}
 
 	static ParseRBXFloat(long) {
 		const exp = long >>> 24
-		if(exp === 0) { return 0 }
+		if (exp === 0) { return 0 }
 		const float = 2 ** (exp - 127) * (1 + ((long >>> 1) & 0x7FFFFF) / 0x7FFFFF)
 		return long & 1 ? -float : float
 	}
@@ -34,11 +25,11 @@ class ByteReader extends Uint8Array {
 		const frac = (((long0 & 1048575) * 4294967296) + long1) / 4503599627370496
 		const neg = long0 & 2147483648
 
-		if(exp === 0) {
-			if(frac === 0) { return -0 }
+		if (exp === 0) {
+			if (frac === 0) { return -0 }
 			const double = 2 ** (exp - 1023) * frac
 			return neg ? -double : double
-		} else if(exp === 2047) {
+		} else if (exp === 2047) {
 			return frac === 0 ? Infinity : NaN
 		}
 
@@ -47,13 +38,12 @@ class ByteReader extends Uint8Array {
 	}
 
 	constructor(buffer) {
-		if(buffer instanceof Uint8Array) {
+		if (buffer instanceof Uint8Array) {
 			super(buffer.buffer)
 		} else {
-			if(!(buffer instanceof ArrayBuffer))
-      {
-        throw new Error("buffer is not an ArrayBuffer")
-      }
+			if (!(buffer instanceof ArrayBuffer)) {
+				throw new Error("buffer is not an ArrayBuffer")
+			}
 			super(buffer)
 		}
 
@@ -80,8 +70,8 @@ class ByteReader extends Uint8Array {
 	Match(arr) {
 		const begin = this.index
 		this.index += arr.length
-		for(let i = 0; i < arr.length; i++) {
-			if(arr[i] !== this[begin + i]) { return false }
+		for (let i = 0; i < arr.length; i++) {
+			if (arr[i] !== this[begin + i]) { return false }
 		}
 		return true
 	}
@@ -119,7 +109,7 @@ class ByteReader extends Uint8Array {
 		const decomLength = this.UInt32LE()
 		this.Jump(4)
 
-		if(comLength === 0) { // TOOD: This path is actually not supported by Roblox, may have to take a look at some point?
+		if (comLength === 0) { // TOOD: This path is actually not supported by Roblox, may have to take a look at some point?
 			return this.Array(decomLength)
 		}
 
@@ -128,43 +118,43 @@ class ByteReader extends Uint8Array {
 		const data = new Uint8Array(decomLength)
 		let index = 0
 
-		while(this.index < end) {
+		while (this.index < end) {
 			const token = this.Byte()
 			let litLen = token >>> 4
 
-			if(litLen === 0xF) {
-				while(true) {
+			if (litLen === 0xF) {
+				while (true) {
 					const lenByte = this.Byte()
 					litLen += lenByte
-					if(lenByte !== 0xFF) { break }
+					if (lenByte !== 0xFF) { break }
 				}
 			}
 
-			for(let i = 0; i < litLen; i++) {
+			for (let i = 0; i < litLen; i++) {
 				data[index++] = this.Byte()
 			}
 
-			if(this.index < end) {
+			if (this.index < end) {
 				const offset = this.UInt16LE()
 				let len = token & 0xF
 
-				if(len === 0xF) {
-					while(true) {
+				if (len === 0xF) {
+					while (true) {
 						const lenByte = this.Byte()
 						len += lenByte
-						if(lenByte !== 0xFF) { break }
+						if (lenByte !== 0xFF) { break }
 					}
 				}
 
 				len += 4
 				const begin = index - offset
-				for(let i = 0; i < len; i++) {
+				for (let i = 0; i < len; i++) {
 					data[index++] = data[begin + i]
 				}
 			}
 		}
 
-		if(this.index !== end) throw new Error("[ByteReader.LZ4] LZ4 size mismatch")
+		if (this.index !== end) throw new Error("[ByteReader.LZ4] LZ4 size mismatch")
 		return data
 	}
 
@@ -177,7 +167,7 @@ class ByteReader extends Uint8Array {
 		const result = new Array(count)
 		const byteCount = count * 4
 
-		for(let i = 0; i < count; i++) {
+		for (let i = 0; i < count; i++) {
 			const value = (this[this.index + i] << 24)
 				+ (this[this.index + (i + count) % byteCount] << 16)
 				+ (this[this.index + (i + count * 2) % byteCount] << 8)
@@ -211,7 +201,7 @@ class ByteReader extends Uint8Array {
 
 	peekMethods.forEach(key => {
 		const fn = ByteReader.prototype[key]
-		ByteReader.prototype["Peek" + key] = function(...args) {
+		ByteReader.prototype["Peek" + key] = function (...args) {
 			const index = this.GetIndex()
 			const result = fn.apply(this, args)
 			this.SetIndex(index)

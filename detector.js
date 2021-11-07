@@ -1,8 +1,20 @@
 const AssetCache = require("./AssetCache")
 const crypto = require("crypto")
-const parser = require('luaparse')
+const { resolveLine, countSpacesInARow } = require("./utils")
+// const parser = require('luaparse')
 
-console.log(JSON.stringify(parseLua("require(a + m, game:GetService(\"a\"))"), null, 4))
+// let globalVars = {}
+
+// let x = parseLua("x = 5; local a = 5; function s() require(script:WaitForChild(\"Table\"))() end", (node) => {
+//   if (node.type == "CallExpression" && node.base.name == "require") {
+//     // console.log(JSON.stringify(node, null, 4))
+//   } else if (node.type == "AssignmentStatement")
+// })
+// console.log("done")
+// console.log(JSON.stringify(x, null, 4))
+// console.log(JSON.stringify(parseLua("i = i + 5"), null, 4))
+// console.log("---")
+// console.log(JSON.stringify(parseLua("i += 5"), null, 4))
 
 // const brain = require("./brain/brain")
 
@@ -120,21 +132,31 @@ const tests = [
   }
 ]
 
-function parseLua(lua) {
-  try {
-    let parsed = parser.parse(lua.replace(/(\w+)\s*(\+|\-|\/|\*)\s*=\s*([^\s]+)/gi, "$1 = $1$2$3"))
-    if (!parsed.body) {
-      console.warn("Parsed no body")
-      console.warn(JSON.stringify(parsed, null, 4))
-      throw new Error("Parsed no body")
-    }
-    return parsed
-  } catch (e) {
-    console.warn("Script failed to parse")
-    console.warn(lua)
-    throw new Error(e)
-  }
-}
+// function parseLua(lua) {
+//   try {
+//     //.replace(/(([\w]*?)(\[|\]|\(|\))*?([\w]*?)(\w|'|"|,|\.|\[|\]|\(|\))*?)\s*(\+|\-|\/|\*|\.\.|\%|\^)\s*=\s*([^\s]+)/gi, "$1 = $1 $6 $7")
+//     let source = lua.replace(/:\s?(.*)?(=)|:\s?(.*)?(,)|:\s?(.*)?(\))|:\s?(.*)?(\s)/gi, function (match) {
+//       let args = [...arguments]
+//       let g1 = args.find(m => m).trim()
+//       if (g1.match(/[^\w]/g)) return match
+//       let g2 = args.slice(0, -2).reverse().find(m => m)
+//       return g2
+//     })
+//     let parsed = parser.parse(source)
+//     if (!parsed.body) {
+//       // console.warn("Parsed no body")
+//       // console.warn(JSON.stringify(parsed, null, 4))
+//       throw new Error("Parsed no body")
+//     }
+//     console.log(parsed)
+//     return parsed
+//   } catch (e) {
+//     // console.warn("Script failed to parse (unable to fully check script)")
+//     // console.warn(lua)
+//     console.error(e)
+//     throw new Error(e)
+//   }
+// }
 
 function score(assetId) {
   return new Promise((resolve, reject) => {
@@ -162,11 +184,21 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
   if (!script.UUID && isExternal == 0) return
   if (!script.Source) return
   let source = script.Source.replace(/\t/g, "    ")
+  // let parsedSource = null
   let sourceByLine = source.split("\n")
   let lastLineIndentation = 0
   let inComment = false
   flags.push([])
   let index = flags.length - 1
+  // try {
+  //   console.log("Parsing")
+  //   parsedSource = parseLua(source)
+  //   console.log("Parsed")
+  // } catch (e) {
+  //   flags.push([])
+  //   let index = flags.length - 1
+  //   flags[index].push(new Flag(null, "Script failed to parse (unable to fully check script)"))
+  // }
   if (isExternal > 0) flags[index].push(new Flag(null, `Script is externally required. Layer #${isExternal}`))
   for (let child of script.Children) {
     await scoreScript(child, overview, flags)
@@ -252,33 +284,6 @@ async function checkChildrenFromScript(model, overview, flags, isExternal, asset
       await checkChildrenFromScript(child, overview, flags, isExternal, assetId, jobId)
     }
   }
-}
-
-function resolveLine(str) {
-  return str.replace(/\\(\d+)/g, (match, g1) => {
-    return String.fromCharCode(g1)
-  })
-}
-
-function countSpacesInARow(str) {
-  let lastChar = ""
-  let maxInRow = 0
-  let inRow = 1
-  for (let char of str) {
-    if (lastChar == " " && char == " ") {
-      inRow++
-    } else {
-      if (inRow > maxInRow) {
-        maxInRow = inRow
-        inRow = 1
-      }
-    }
-    lastChar = char
-  }
-  if (inRow > maxInRow) {
-    maxInRow = inRow
-  }
-  return maxInRow >= 8 ? maxInRow : 0
 }
 
 function removeCyclic(jobId) {

@@ -30,7 +30,7 @@ node_modules/
 # PEM files
 *.pem
 
-temp/
+temp/*
 
 *ExampleVideo.mp4
 

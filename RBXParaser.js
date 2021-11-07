@@ -1,24 +1,13 @@
 // Credit: AntiBoomz's BTRoblox Extension
 // https://chrome.google.com/webstore/detail/btroblox-making-roblox-be/hbkpclpemjeibhioopcebchdmohaieln?hl=en-US
 
+"use strict"
 
 const ByteReader = require("./ByteReader")
 const jsdom = require("jsdom")
-
-"use strict"
+const { bufferToString } = require("./utils")
 
 // http://www.classy-studios.com/Downloads/RobloxFileSpec.pdf
-
-function bufferToString(buffer) {
-  if (buffer instanceof ArrayBuffer) { buffer = new Uint8Array(buffer) }
-  const result = []
-
-  for (let i = 0; i < buffer.length; i += 0x8000) {
-    result.push(String.fromCharCode.apply(null, buffer.subarray(i, i + 0x8000)))
-  }
-
-  return result.join("")
-}
 
 class RBXInstance {
   static new(className) {
