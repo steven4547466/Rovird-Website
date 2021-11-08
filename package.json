@@ -25,6 +25,6 @@
     "path": "^0.12.7"
   },
   "devDependencies": {
-    "standard": "^13.1.0"
+    "standard": "^16.0.4"
   }
 }
