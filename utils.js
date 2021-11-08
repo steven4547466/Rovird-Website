@@ -1,3 +1,5 @@
+const https = require("https")
+
 function bufferToString(buffer) {
   if (buffer instanceof ArrayBuffer) { buffer = new Uint8Array(buffer) }
   const result = []
@@ -36,4 +38,12 @@ function countSpacesInARow(str) {
   return maxInRow >= 8 ? maxInRow : 0
 }
 
-module.exports = { bufferToString, resolveLine, countSpacesInARow }
+function validateAsset(id) {
+  return new Promise((resolve, reject) => {
+    https.get(`https://www.roblox.com/library/${id}`, (res) => {
+      resolve(res.statusCode >= 200 && res.statusCode < 400)
+    }).on("error", reject)
+  })
+}
+
+module.exports = { bufferToString, resolveLine, countSpacesInARow, validateAsset }

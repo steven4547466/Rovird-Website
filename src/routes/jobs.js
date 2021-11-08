@@ -126,10 +126,21 @@ async function getResults(body, jobId) {
   completedJobs[jobId] = null
   for (let script of body) {
     if (!script.Source || !script.Children || !script.UUID) {
-      continue
+      if (script.assetId) {
+        try {
+          results.push(await detector.score(script.assetId, {}, [], 0, jobId))
+        } catch (e) {
+          let data = {}
+          data[crypto.randomUUID()] = { error: true, message: "An error has occurred while downloading asset", flags: [], assetId }
+          results.push(data)
+        }
+      } else {
+        continue
+      }
+    } else {
+      results.push(await detector.scoreScript(script, {}, [], 0, null, jobId))
+      detector.removeCyclic(jobId)
     }
-    results.push(await detector.scoreScript(script, {}, [], 0, null, jobId))
-    detector.removeCyclic(jobId)
   }
   setTimeout(() => {
     if (completedJobs[jobId]) delete completedJobs[jobId]

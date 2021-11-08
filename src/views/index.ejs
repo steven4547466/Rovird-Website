@@ -8,25 +8,45 @@
     <meta property="og:description" content="Roblox Virus Detector.">
     <meta name="twitter:description" content="Roblox Virus Detector.">
     <meta itemprop="description" content="Roblox Virus Detector.">
-    <script>
-      function onLoad() {
-        particlesJS.load('particles-js', '/assets/particles.json', function () {
-          console.log('callback - particles.js config loaded')
-        })
-      }
-    </script>
+    <script type="text/javascript" src="js/mainPage.js"></script>
 </head>
 
-<body onload="onLoad()">
-  <div id="particles-js"></div>
-  <section style="padding:0; margin:0;" class="is-overlay" id="title">
-    <div class="columns center-screen is-mobile title">
-      <div class="column soon-col">
-        <img class="soon" src="/assets/Soon.png">
+<body>
+  <section class="hero">
+    <div class="hero-body">
+      <p class="title">
+        Rovird
+      </p>
+      <p class="subtitle">
+        Advanced Roblox Virus Detector
+      </p>
+    </div>
+  </section>
+  <section class="section">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-half">
+          <div class="field has-text-centered">
+            <label class="label">Asset ID</label>
+            <div class="control">
+              <input id="asset-id-input" class="input has-text-centered" type="text" placeholder="Asset ID" onkeypress="validateId(event)">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="columns is-centered">
+        <div class="column is-half">
+          <div class="field is-grouped is-grouped-centered">
+            <p class="control">
+              <button onclick="submitAsset()" id="submit-asset" class="button is-primary">
+                Submit
+              </button>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
-  <script src="/js/particles.min.js"></script>
 </body>
 
 </html>

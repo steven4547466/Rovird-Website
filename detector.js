@@ -1,6 +1,6 @@
 const AssetCache = require("./AssetCache")
 const crypto = require("crypto")
-const { resolveLine, countSpacesInARow } = require("./utils")
+const { resolveLine, countSpacesInARow, validateAsset } = require("./utils")
 // const parser = require('luaparse')
 
 // let globalVars = {}
@@ -62,7 +62,15 @@ const tests = [
       let checkAfter = additional.flags.length
       while ((match = regex.exec(line)) != null) {
         let id = Number(match[1])
-        await new Promise(resolve => {
+        await new Promise(async resolve => {
+          if (!(await validateAsset(assetId))) {
+            additional.flags.push([])
+            let index = additional.flags.length - 1
+            additional.flags[index].push(new Flag(null, "Asset id is invalid"))
+            let data = { flags: additional.flags[index], isExternal: additional.isExternal + 1, name: "Invalid asset", assetId: id }
+            overview[crypto.randomUUID()] = data
+            return resolve()
+          }
           AssetCache.loadModel(id, async (model) => {
             if (!preventCyclic[additional.jobId]) preventCyclic[additional.jobId] = []
             if (preventCyclic[additional.jobId].includes(id)) return resolve()
@@ -158,8 +166,13 @@ const tests = [
 //   }
 // }
 
-function score(assetId) {
-  return new Promise((resolve, reject) => {
+function score(assetId, overview = {}, flags = [], isExternal = 0, jobId = "") {
+  return new Promise(async (resolve, reject) => {
+    if (!(await validateAsset(assetId))) {
+      let overview = {}
+      overview[crypto.randomUUID()] = { error: true, message: "Invalid asset id", flags: [], assetId }
+      return resolve(overview)
+    }
     AssetCache.loadModel(assetId, async model => {
       if (model == null) {
         let overview = {}
@@ -170,9 +183,10 @@ function score(assetId) {
       for (let i = 0; i < model.length; i++) {
         if (model[i].ClassName.includes("Script") || (model[i].ClassName.trim() == "" && model[i].Source && model[i].Source.length > 0)) {
           model[i].UUID = crypto.randomUUID()
-          information.push((await scoreScript(model[i], {}, [], 1, assetId)))
+          information.push((await scoreScript(model[i], overview, flags, isExternal, assetId, jobId)))
+          await checkChildren(model[i], information, assetId, jobId)
         } else {
-          await checkChildren(model[i], information, assetId)
+          await checkChildren(model[i], information, assetId, jobId)
         }
       }
       resolve(information)
@@ -266,9 +280,11 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
 
 async function checkChildren(model, information, assetId, jobId = "") {
   for (let child of model.Children) {
+    console.log("found child")
     if (child.ClassName.includes("Script") || (child.ClassName.trim() == "" && child.Source && child.Source.length > 0)) {
       child.UUID = crypto.randomUUID()
       information.push((await scoreScript(child, {}, [], 0, assetId, jobId)))
+      await checkChildren(child, information, assetId, jobId)
     } else {
       await checkChildren(child, information, assetId, jobId)
     }
@@ -280,6 +296,7 @@ async function checkChildrenFromScript(model, overview, flags, isExternal, asset
   for (let child of model.Children) {
     if (child.ClassName.includes("Script")) {
       await scoreScript(child, overview, flags, isExternal, assetId, jobId)
+      await checkChildrenFromScript(child, overview, flags, isExternal, assetId, jobId)
     } else {
       await checkChildrenFromScript(child, overview, flags, isExternal, assetId, jobId)
     }
