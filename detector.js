@@ -63,7 +63,7 @@ const tests = [
       while ((match = regex.exec(line)) != null) {
         let id = Number(match[1])
         await new Promise(async resolve => {
-          if (!(await validateAsset(assetId))) {
+          if (!(await validateAsset(id))) {
             additional.flags.push([])
             let index = additional.flags.length - 1
             additional.flags[index].push(new Flag(null, "Asset id is invalid"))
