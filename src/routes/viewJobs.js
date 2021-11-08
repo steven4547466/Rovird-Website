@@ -2,10 +2,10 @@ const express = require('express')
 const router = express.Router()
 
 /**
- * Home page rendering
+ * View jobs page rendering
  */
 router.get('/', (req, res) => {
-  res.render('index')
+  res.render('jobsview')
 })
 
 module.exports = router

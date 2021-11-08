@@ -64,10 +64,7 @@ const tests = [
         let id = Number(match[1])
         await new Promise(async resolve => {
           if (!(await validateAsset(id))) {
-            additional.flags.push([])
-            let index = additional.flags.length - 1
-            additional.flags[index].push(new Flag(null, "Asset id is invalid"))
-            let data = { flags: additional.flags[index], isExternal: additional.isExternal + 1, name: "Invalid asset", assetId: id }
+            let data = { error: true, message: "Invalid asset id", flags: [], assetId, isExternal: additional.isExternal + 1, name: "Invalid asset" }
             overview[crypto.randomUUID()] = data
             return resolve()
           }
@@ -169,27 +166,24 @@ const tests = [
 function score(assetId, overview = {}, flags = [], isExternal = 0, jobId = "") {
   return new Promise(async (resolve, reject) => {
     if (!(await validateAsset(assetId))) {
-      let overview = {}
-      overview[crypto.randomUUID()] = { error: true, message: "Invalid asset id", flags: [], assetId }
+      overview[crypto.randomUUID()] = { error: true, message: "Invalid asset id", flags: [], assetId, name: "Invalid asset" }
       return resolve(overview)
     }
     AssetCache.loadModel(assetId, async model => {
       if (model == null) {
-        let overview = {}
         overview[crypto.randomUUID()] = { flags: [new Flag(null, "Unable to download asset after 5 retries")], assetId }
         return resolve(overview)
       }
-      let information = []
       for (let i = 0; i < model.length; i++) {
         if (model[i].ClassName.includes("Script") || (model[i].ClassName.trim() == "" && model[i].Source && model[i].Source.length > 0)) {
           model[i].UUID = crypto.randomUUID()
-          information.push((await scoreScript(model[i], overview, flags, isExternal, assetId, jobId)))
-          await checkChildren(model[i], information, assetId, jobId)
+          await scoreScript(model[i], overview, flags, isExternal, assetId, jobId)
+          // await checkChildren(model[i], information, assetId, jobId)
         } else {
-          await checkChildren(model[i], information, assetId, jobId)
+          await checkChildren(model[i], overview, flags, isExternal, assetId, jobId)
         }
       }
-      resolve(information)
+      resolve(overview)
     })
   })
 }
@@ -215,7 +209,8 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
   // }
   if (isExternal > 0) flags[index].push(new Flag(null, `Script is externally required. Layer #${isExternal}`))
   for (let child of script.Children) {
-    await scoreScript(child, overview, flags)
+    if (!child.UUID) child.UUID = crypto.randomUUID()
+    await scoreScript(child, overview, flags, isExternal, assetId, jobId)
   }
   // let aiAnalysis = {}
   for (let i = 0; i < sourceByLine.length; i++) {
@@ -278,15 +273,14 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
   return overview
 }
 
-async function checkChildren(model, information, assetId, jobId = "") {
+async function checkChildren(model, overview, flags, isExternal, assetId, jobId) {
   for (let child of model.Children) {
-    console.log("found child")
     if (child.ClassName.includes("Script") || (child.ClassName.trim() == "" && child.Source && child.Source.length > 0)) {
       child.UUID = crypto.randomUUID()
-      information.push((await scoreScript(child, {}, [], 0, assetId, jobId)))
-      await checkChildren(child, information, assetId, jobId)
+      await scoreScript(child, overview, flags, isExternal, assetId, jobId)
+      // await checkChildren(child, information, assetId, jobId)
     } else {
-      await checkChildren(child, information, assetId, jobId)
+      await checkChildren(child, overview, flags, isExternal, assetId, jobId)
     }
   }
 }
@@ -296,7 +290,7 @@ async function checkChildrenFromScript(model, overview, flags, isExternal, asset
   for (let child of model.Children) {
     if (child.ClassName.includes("Script")) {
       await scoreScript(child, overview, flags, isExternal, assetId, jobId)
-      await checkChildrenFromScript(child, overview, flags, isExternal, assetId, jobId)
+      // await checkChildrenFromScript(child, overview, flags, isExternal, assetId, jobId)
     } else {
       await checkChildrenFromScript(child, overview, flags, isExternal, assetId, jobId)
     }
