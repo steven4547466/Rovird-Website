@@ -12,7 +12,7 @@ app.set('view engine', 'ejs')
 
 // middleware setup
 app.use(logger('common'))
-app.use(bodyParser.json({ limit: "2mb" }))
+app.use(bodyParser.json({ limit: "20mb" }))
 app.use(express.static(path.join(__dirname, 'public')))
 app.use(bodyParser.urlencoded({
   extended: true
