@@ -82,7 +82,7 @@ const tests = [
               return resolve()
             }
             for (let i = 0; i < model.length; i++) {
-              await checkChildrenFromScript(model[i], additional.overview, additional.flags, additional.isExternal + 1, id, additional.jobId)
+              await checkChildrenFromScript(model[i], additional.overview, additional.flags, additional.isExternal + 1, id, additional.jobId, additional.options)
             }
             resolve()
           })
@@ -163,7 +163,7 @@ const tests = [
 //   }
 // }
 
-function score(assetId, overview = {}, flags = [], isExternal = 0, jobId = "") {
+function score(assetId, overview = {}, flags = [], isExternal = 0, jobId = "", options = {}) {
   return new Promise(async (resolve, reject) => {
     if (!(await validateAsset(assetId))) {
       overview[crypto.randomUUID()] = { error: true, message: "Invalid asset id", flags: [], assetId, name: "Invalid asset" }
@@ -177,10 +177,10 @@ function score(assetId, overview = {}, flags = [], isExternal = 0, jobId = "") {
       for (let i = 0; i < model.length; i++) {
         if (model[i].ClassName.includes("Script") || (model[i].ClassName.trim() == "" && model[i].Source && model[i].Source.length > 0)) {
           model[i].UUID = crypto.randomUUID()
-          await scoreScript(model[i], overview, flags, isExternal, assetId, jobId)
+          await scoreScript(model[i], overview, flags, isExternal, assetId, jobId, options)
           // await checkChildren(model[i], information, assetId, jobId)
         } else {
-          await checkChildren(model[i], overview, flags, isExternal, assetId, jobId)
+          await checkChildren(model[i], overview, flags, isExternal, assetId, jobId, options)
         }
       }
       resolve(overview)
@@ -188,7 +188,7 @@ function score(assetId, overview = {}, flags = [], isExternal = 0, jobId = "") {
   })
 }
 
-async function scoreScript(script, overview = {}, flags = [], isExternal = 0, assetId = 0, jobId = "") {
+async function scoreScript(script, overview = {}, flags = [], isExternal = 0, assetId = 0, jobId = "", options) {
   if (!script.UUID && isExternal == 0) return
   if (!script.Source) return
   let source = script.Source.replace(/\t/g, "    ")
@@ -210,30 +210,29 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
   if (isExternal > 0) flags[index].push(new Flag(null, `Script is externally required. Layer #${isExternal}`))
   for (let child of script.Children) {
     if (!child.UUID) child.UUID = crypto.randomUUID()
-    await scoreScript(child, overview, flags, isExternal, assetId, jobId)
+    await scoreScript(child, overview, flags, isExternal, assetId, jobId, options)
   }
   // let aiAnalysis = {}
   for (let i = 0; i < sourceByLine.length; i++) {
     if (sourceByLine[i].trim().length == 0) continue
-    let line = resolveLine(sourceByLine[i]).trim()
+    let line = resolveLine(sourceByLine[i])
     if (inComment) {
       if (line.includes("]]")) {
         inComment = false
-        line = line.slice(line.indexOf("]]") + 2).trim()
+        line = line.slice(line.indexOf("]]") + 2)
       } else {
         continue
       }
     }
     if (!inComment && line.includes("--[[")) {
-      line = line.slice(0, line.indexOf("--[[")).trim()
+      line = line.slice(0, line.indexOf("--[["))
       inComment = true
     }
     if (line.trim().startsWith("--")) continue
     if (line.includes("--")) {
       line = line.slice(0, line.indexOf("--")).trim()
     }
-    line = line.trim()
-    if (line.length == 0) continue
+    if (line.trim().length == 0) continue
     // let analysis = await brain.run(line)
     // for (let entry of analysis) {
     //   if (aiAnalysis[entry.label] == null) aiAnalysis[entry.label] = 0
@@ -250,7 +249,7 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
     }
     for (let test of tests) {
       let res = null
-      if ((res = (await test.func(line, { flags, isExternal, overview, jobId })))) {
+      if ((res = (await test.func(line, { flags, isExternal, overview, jobId, options })))) {
         if (typeof res !== "string") {
           flags[index].push(new Flag(i, test.flagReason))
         } else {
@@ -268,31 +267,37 @@ async function scoreScript(script, overview = {}, flags = [], isExternal = 0, as
     data.name = script.Name
     data.assetId = assetId
   }
+  if (options.getNames) {
+    data.name = script.Name
+  }
+  if (options.getSource) {
+    data.source = script.Source
+  }
   overview[script.UUID || crypto.randomUUID()] = data
   // if (index == 0) console.log(flags)
   return overview
 }
 
-async function checkChildren(model, overview, flags, isExternal, assetId, jobId) {
+async function checkChildren(model, overview, flags, isExternal, assetId, jobId, options) {
   for (let child of model.Children) {
-    if (child.ClassName.includes("Script") || (child.ClassName.trim() == "" && child.Source && child.Source.length > 0)) {
+    if (child.Source) {
       child.UUID = crypto.randomUUID()
-      await scoreScript(child, overview, flags, isExternal, assetId, jobId)
+      // await scoreScript(child, overview, flags, isExternal, assetId, jobId, options)
       // await checkChildren(child, information, assetId, jobId)
     } else {
-      await checkChildren(child, overview, flags, isExternal, assetId, jobId)
+      await checkChildren(child, overview, flags, isExternal, assetId, jobId, options)
     }
   }
 }
 
-async function checkChildrenFromScript(model, overview, flags, isExternal, assetId, jobId) {
-  await scoreScript(model, overview, flags, isExternal, assetId, jobId)
+async function checkChildrenFromScript(model, overview, flags, isExternal, assetId, jobId, options) {
+  await scoreScript(model, overview, flags, isExternal, assetId, jobId, options)
   for (let child of model.Children) {
-    if (child.ClassName.includes("Script")) {
-      await scoreScript(child, overview, flags, isExternal, assetId, jobId)
+    if (child.Source) {
+      // await scoreScript(child, overview, flags, isExternal, assetId, jobId, options)
       // await checkChildrenFromScript(child, overview, flags, isExternal, assetId, jobId)
     } else {
-      await checkChildrenFromScript(child, overview, flags, isExternal, assetId, jobId)
+      await checkChildrenFromScript(child, overview, flags, isExternal, assetId, jobId, options)
     }
   }
 }

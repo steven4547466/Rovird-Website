@@ -29,3 +29,7 @@ async function postData(url = "", data = {}) {
   })
   return response.json()
 }
+
+function wait(ms) {
+  return new Promise(resolve => {setTimeout(resolve, ms)})
+}

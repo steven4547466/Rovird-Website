@@ -1,0 +1,27 @@
+pre {
+  max-height: 40em;
+  width: 60%;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-bottom: 5em !important;
+  margin-top: 2em !important;
+}
+
+code {
+  line-height: 2 !important;
+  display: inline-block;
+}
+
+.flags {
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.flag-text {
+  color: #ff0000
+}
+
+.flag-line {
+  color: #ffffff
+}

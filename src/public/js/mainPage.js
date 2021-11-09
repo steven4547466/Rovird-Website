@@ -1,10 +1,15 @@
 function submitAsset() {
-  return alert("Not yet implemented. Check back soon!")
   let id = document.getElementById("asset-id-input").value
-  postData(getUrl("jobs"), [{ assetId: id }])
-    .then(data => {
-      console.log(data)
+  postData(getUrl("jobs"), [{ assetId: id, getSource: true, getNames: true }])
+    .then(async (data) => {
+      while (true) {
+        let res = await getData(getUrl(`jobs-status?jobIds=${data.jobId}`))
+        if (res[data.jobId]) break
+        await wait(500)
+      }
+      window.location.href = `viewjobs?jobIds=${data.jobId}`
     })
+    .catch(console.error)
 }
 
 function validateId(event) {

@@ -128,7 +128,7 @@ async function getResults(body, jobId) {
     if (!script.Source || !script.Children || !script.UUID) {
       if (script.assetId) {
         try {
-          results.push(await detector.score(script.assetId, {}, [], 0, jobId))
+          results.push(await detector.score(script.assetId, {}, [], 0, jobId, { getSource: script.getSource, getNames: script.getNames }))
         } catch (e) {
           let data = {}
           data[crypto.randomUUID()] = { error: true, message: "An error has occurred while downloading asset", flags: [], assetId }
@@ -138,7 +138,7 @@ async function getResults(body, jobId) {
         continue
       }
     } else {
-      results.push(await detector.scoreScript(script, {}, [], 0, null, jobId))
+      results.push(await detector.scoreScript(script, {}, [], 0, null, jobId, { getSource: script.getSource, getNames: script.getNames }))
       detector.removeCyclic(jobId)
     }
   }
