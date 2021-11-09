@@ -170,6 +170,7 @@ function score(assetId, overview = {}, flags = [], isExternal = 0, jobId = "", o
       return resolve(overview)
     }
     AssetCache.loadModel(assetId, async model => {
+      console.log(model)
       if (model == null) {
         overview[crypto.randomUUID()] = { flags: [new Flag(null, "Unable to download asset after 5 retries")], assetId }
         return resolve(overview)
@@ -282,7 +283,7 @@ async function checkChildren(model, overview, flags, isExternal, assetId, jobId,
   for (let child of model.Children) {
     if (child.Source) {
       child.UUID = crypto.randomUUID()
-      // await scoreScript(child, overview, flags, isExternal, assetId, jobId, options)
+      await scoreScript(child, overview, flags, isExternal, assetId, jobId, options)
       // await checkChildren(child, information, assetId, jobId)
     } else {
       await checkChildren(child, overview, flags, isExternal, assetId, jobId, options)
