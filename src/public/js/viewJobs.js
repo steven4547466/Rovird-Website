@@ -12,16 +12,26 @@ async function getJobs() {
             title.classList.add("title")
             title.style = "text-align: center;"
             title.textContent = r.name
+            let text = document.createElement("p")
+            let flags = [...new Set(r.flags.map(f => f.line).filter(l => l))]
+            if (r.flags.length > 0) {
+              text.classList.add("flag-text")
+              text.textContent = `${r.flags.length} flags (line(s) #${flags.join(", #")})`
+            } else {
+              text.classList.add("no-flags")
+              text.textContent = "No flags"
+            }
             let pre = document.createElement("pre")
             pre.id = uuid
             pre.classList.add("line-numbers")
-            pre.setAttribute("data-line", [...new Set(r.flags.map(f => f.line).filter(l => l))].join(","))
+            pre.setAttribute("data-line", flags.join(","))
             let code = document.createElement("code")
             code.classList.add("language-lua")
             // console.log(r.source)
             code.textContent = r.source
             pre.appendChild(code)
             scripts.appendChild(title)
+            scripts.appendChild(text)
             scripts.appendChild(pre)
             pre.addEventListener('DOMNodeInserted', function (event) {
               if (!event.target.getAttribute) return

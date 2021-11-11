@@ -19,11 +19,17 @@ code {
 }
 
 .flag-text {
-  color: #ff0000
+  color: #ff0000;
+  text-align: center;
 }
 
 .flag-line {
   color: #ffffff
+}
+
+.no-flags {
+  color: #00ff00;
+  text-align: center;
 }
 
 .main-or {
