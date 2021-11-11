@@ -50,11 +50,21 @@ router.post('/', (req, res) => {
     return
   }
 
-  if (!req.body || !Array.isArray(req.body) || req.body.length == 0) {
+  if (!req.body || ((!Array.isArray(req.body) || req.body.length == 0) && !req.file)) {
     res.status(400)
     res.send("No body provided")
     res.end()
     return
+  }
+
+  if (req.file) {
+    for (let [k, v] of Object.entries(req.file)) {
+      req.body[k] = v
+    }
+
+    if (req.body.options) {
+      req.body.options = JSON.parse(req.body.options)
+    }
   }
 
   const jobId = crypto.randomUUID()
@@ -124,23 +134,27 @@ function isRateLimited(req, res) {
 async function getResults(body, jobId) {
   let results = []
   completedJobs[jobId] = null
-  for (let script of body) {
-    if (!script.Source || !script.Children || !script.UUID) {
-      if (script.assetId) {
-        try {
-          results.push(await detector.score(script.assetId, {}, [], 0, jobId, { getSource: script.getSource, getNames: script.getNames }))
-        } catch (e) {
-          let data = {}
-          data[crypto.randomUUID()] = { error: true, message: "An error has occurred while downloading asset", flags: [], assetId }
-          results.push(data)
+  if (!body.filename) {
+    for (let script of body) {
+      if (!script.Source || !script.Children || !script.UUID) {
+        if (script.assetId) {
+          try {
+            results.push(await detector.score(script.assetId, {}, [], 0, jobId, { getSource: script.getSource, getNames: script.getNames }))
+          } catch (e) {
+            let data = {}
+            data[crypto.randomUUID()] = { error: true, message: "An error has occurred while downloading asset", flags: [], assetId }
+            results.push(data)
+          }
+        } else {
+          continue
         }
       } else {
-        continue
+        results.push(await detector.scoreScript(script, {}, [], 0, null, jobId, { getSource: script.getSource, getNames: script.getNames }))
+        detector.removeCyclic(jobId)
       }
-    } else {
-      results.push(await detector.scoreScript(script, {}, [], 0, null, jobId, { getSource: script.getSource, getNames: script.getNames }))
-      detector.removeCyclic(jobId)
     }
+  } else {
+    results.push(await detector.scoreFile(body.filename, {}, [], 0, jobId, { getSource: body.options.getSource, getNames: body.options.getNames }))
   }
   setTimeout(() => {
     if (completedJobs[jobId]) delete completedJobs[jobId]

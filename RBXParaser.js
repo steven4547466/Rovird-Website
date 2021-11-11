@@ -624,6 +624,19 @@ const RBXXmlParser = {
 
           return inst.setProperty(name, vector3, "Vector3")
         }
+        case "udim": {
+          const udim = [
+            [0, 0]
+          ]
+          Object.values(propNode.children).forEach(x => {
+            const nodeName = x.nodeName.toUpperCase()
+
+            if (nodeName === "S") { udim[0][0] = +x.textContent }
+            else if (nodeName === "O") { udim[0][1] = +x.textContent }
+          })
+
+          return inst.setProperty(name, udim, "UDim")
+        }
         case "udim2": {
           const udim2 = [
             [0, 0],
@@ -668,12 +681,19 @@ const RBXXmlParser = {
 
           return inst.setProperty(name, sharedString, "SharedString")
         }
+        case "rect2d":
         case "colorsequence":
         case "numberrange":
         case "numbersequence":
           return
         default:
-          THROW_DEV_WARNING(`[ParseRBXXml] Unknown dataType ${propNode.nodeName} for ${inst.ClassName}.${name}`, propNode.innerHTML)
+          console.log(propNode)
+          Object.values(propNode.children).forEach(x => {
+            const nodeName = x.nodeName.toUpperCase()
+            console.log(nodeName)
+            console.log(x.textContent)
+          })
+          throw new Error(`[ParseRBXXml] Unknown dataType ${propNode.nodeName} for ${inst.ClassName}.${name}`, propNode.innerHTML)
       }
     })
   }

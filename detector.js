@@ -163,6 +163,27 @@ const tests = [
 //   }
 // }
 
+function scoreFile(filename, overview = {}, flags = [], isExternal = 0, jobId = "", options = {}) {
+  return new Promise(async (resolve, reject) => {
+    AssetCache.loadModel(filename, async model => {
+      if (model == null) {
+        overview[crypto.randomUUID()] = { flags: [new Flag(null, "Unable to parse file")] }
+        return resolve(overview)
+      }
+      for (let i = 0; i < model.length; i++) {
+        if (model[i].ClassName.includes("Script") || (model[i].ClassName.trim() == "" && model[i].Source && model[i].Source.length > 0)) {
+          model[i].UUID = crypto.randomUUID()
+          await scoreScript(model[i], overview, flags, isExternal, 0, jobId, options)
+          // await checkChildren(model[i], information, assetId, jobId)
+        } else {
+          await checkChildren(model[i], overview, flags, isExternal, 0, jobId, options)
+        }
+      }
+      resolve(overview)
+    })
+  })
+}
+
 function score(assetId, overview = {}, flags = [], isExternal = 0, jobId = "", options = {}) {
   return new Promise(async (resolve, reject) => {
     if (!(await validateAsset(assetId))) {
@@ -170,7 +191,6 @@ function score(assetId, overview = {}, flags = [], isExternal = 0, jobId = "", o
       return resolve(overview)
     }
     AssetCache.loadModel(assetId, async model => {
-      console.log(model)
       if (model == null) {
         overview[crypto.randomUUID()] = { flags: [new Flag(null, "Unable to download asset after 5 retries")], assetId }
         return resolve(overview)
@@ -314,4 +334,4 @@ class Flag {
   }
 }
 
-module.exports = { score, scoreScript, removeCyclic }
+module.exports = { score, scoreScript, scoreFile, removeCyclic }

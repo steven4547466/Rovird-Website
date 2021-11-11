@@ -25,3 +25,9 @@ code {
 .flag-line {
   color: #ffffff
 }
+
+.main-or {
+  padding-top: 2em;
+  font-size: larger;
+  color: #fff;
+}

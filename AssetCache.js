@@ -4,6 +4,7 @@
 "use strict"
 
 const fetch = require("node-fetch")
+const crypto = require("crypto")
 const RBXParser = require("./RBXParaser")
 const fs = require("fs")
 const { bufferToString } = require("./utils")
@@ -89,11 +90,47 @@ function resolveAssetUrl(url) {
   return `https://assetdelivery.roblox.com/v1/asset/?${paramString.toString()}`
 }
 
+function resolveToCache(file, id, constructor) {
+  try {
+    let parsed = constructor(file)
+    if (id == null) {
+      id = crypto.randomUUID()
+    }
+    cache[id] = parsed
+    let timeout = setTimeout(() => {
+      if (cache[id]) delete cache[id]
+      let index = cacheLookup.find((e) => e.id == id)
+      if (index != -1) cacheLookup.splice(index, 1)
+    }, 600000)
+    cacheLookup.unshift({ id, timeout })
+    if (cacheLookup.length > 1000) {
+      let c = cache.pop()
+      delete cache[c.id]
+      clearTimeout(c.timeout)
+    }
+  } catch (e) {
+    console.error(e)
+  }
+  try {
+    fs.unlinkSync(__dirname + "/temp/" + id)
+  } catch (e) {
+    console.error(e)
+  }
+  return cache[id]
+}
+
 function createMethod(constructor) {
 
   return async (strict, url, cb, retries) => {
     let id = null
-    if (typeof strict !== "boolean") {
+    if (fs.existsSync(__dirname + "/temp/" + strict)) {
+      cb = url
+      fs.readFile(__dirname + "/temp/" + strict, (err, file) => {
+        if (err) throw err
+        cb(resolveToCache(file, strict, constructor))
+      })
+      return
+    } else if (typeof strict !== "boolean") {
       retries = cb
       cb = url
       url = strict
@@ -108,25 +145,8 @@ function createMethod(constructor) {
     try {
       const resolvedUrl = resolveAssetUrl(url)
       const file = await download(resolvedUrl, __dirname + "/temp/" + id)
+      cb(resolveToCache(file, id, constructor))
 
-
-      let parsed = constructor(file)
-      cache[id] = parsed
-      let timeout = setTimeout(() => {
-        if (cache[id]) delete cache[id]
-        let index = cacheLookup.find((e) => e.id == id)
-        if (index != -1) cacheLookup.splice(index, 1)
-      }, 600000)
-      cacheLookup.unshift({ id, timeout })
-      if (cacheLookup.length > 1000) {
-        let c = cache.pop()
-        delete cache[c.id]
-        clearTimeout(c.timeout)
-      }
-      cb(cache[id])
-      try {
-        fs.unlinkSync(__dirname + "/temp/" + id)
-      } catch (e) { }
     } catch (err) {
       if (err = "Not a valid RBXM file") {
         console.log("Invalid file")
