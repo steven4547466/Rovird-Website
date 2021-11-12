@@ -65,7 +65,7 @@ const tests = [
         await new Promise(async resolve => {
           if (!(await validateAsset(id))) {
             let data = { error: true, message: "Invalid asset id", flags: [], assetId, isExternal: additional.isExternal + 1, name: "Invalid asset" }
-            overview[crypto.randomUUID()] = data
+            additional.overview[crypto.randomUUID()] = data
             return resolve()
           }
           AssetCache.loadModel(id, async (model) => {
@@ -78,7 +78,7 @@ const tests = [
               additional.flags[index].push(new Flag(null, `Script is externally required. Layer #${additional.isExternal + 1}`))
               additional.flags[index].push(new Flag(null, `Unable to download asset after 5 retries`))
               let data = { flags: additional.flags[index], isExternal: additional.isExternal + 1, name: "Unknown", assetId: id }
-              overview[crypto.randomUUID()] = data
+              additional.overview[crypto.randomUUID()] = data
               return resolve()
             }
             for (let i = 0; i < model.length; i++) {
