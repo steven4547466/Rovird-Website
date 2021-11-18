@@ -16,7 +16,7 @@ function submitAsset() {
     if (file) {
       let formData = new FormData()
       formData.append("file", file)
-      formData.append("options", JSON.stringify({getSource: true, getNames: true}))
+      formData.append("options", JSON.stringify({ getSource: true, getNames: true }))
       postMultipartData(getUrl("jobs"), formData)
         .then(async (data) => {
           while (true) {
@@ -44,4 +44,20 @@ function validateId(event) {
     ev.returnValue = false
     if (ev.preventDefault) ev.preventDefault()
   }
+}
+
+let search = window.location.search.slice(1).split("&")[0]
+let id = search.includes("assetId") ? search.split("=")[1] : null
+
+if (id) {
+  postJSONData(getUrl("jobs"), [{ assetId: id, getSource: true, getNames: true }])
+    .then(async (data) => {
+      while (true) {
+        let res = await getData(getUrl(`jobs-status?jobIds=${data.jobId}`))
+        if (res[data.jobId]) break
+        await wait(500)
+      }
+      window.location.href = `viewjobs?jobIds=${data.jobId}`
+    })
+    .catch(console.error)
 }
